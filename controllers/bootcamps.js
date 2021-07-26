@@ -18,7 +18,7 @@ exports.getBootcamps = asyncHandler(async (req, res, next) => {
   // Delete removeFields from query
   removeFields.forEach((field) => delete reqQuery[field]);
 
-  // Copy query string
+  // Copy query string [so we can use replace]
   let queryString = JSON.stringify(reqQuery);
 
   // Create operators ($gt, $lt, $lte etc)
@@ -28,7 +28,8 @@ exports.getBootcamps = asyncHandler(async (req, res, next) => {
   );
 
   //finding resource
-  query = Bootcamp.find(JSON.parse(queryString));
+  // query = Bootcamp.find(JSON.parse(queryString)).populate('courses');
+  query = Bootcamp.find(JSON.parse(queryString)).populate('courses', 'title description weeks ');
 
   // Select fields
   if (req.query.select) {
