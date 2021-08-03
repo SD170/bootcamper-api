@@ -2,6 +2,33 @@ const errorResponse = require("../utils/errorResponse");
 const Bootcamp = require("../models/Bootcamp");
 const asyncHandler = require("../middleware/async");
 const geocoder = require("../utils/geocoder");
+// const { Error } = require("mongoose");
+// const multer = require("multer");
+
+// //creating filestorage for multer
+
+// const fileStorageEngine = multer.diskStorage({
+//   destination: (req, fle, cb) => {
+//     cb(null, "../images");
+//   },
+//   filename: (req, file, cb) => {
+//     cb(null, file.originalname + "-" + Date.now());
+//   },
+// });
+
+// const upload = multer({
+//   storage: fileStorageEngine,
+//   limits: {
+//     fileSize: 5 * 1024 * 1024,  //2MB
+//   },
+//   fileFilter: function (req, file, cb) {
+//     if (!file.mimetype.startsWith('image')) {     // all image type starts with image, be it jpg, png or other
+//       req.fileValidationError = 'mimetype mismatch';
+//       return cb(null, false, new Error('mimetype mismatch'));
+//     }
+//     cb(null, true);
+//    }
+// });
 
 //  @desc       get all bootcamps
 //  @route      GET /api/v1/bootcamps
@@ -29,7 +56,10 @@ exports.getBootcamps = asyncHandler(async (req, res, next) => {
 
   //finding resource
   // query = Bootcamp.find(JSON.parse(queryString)).populate('courses');
-  query = Bootcamp.find(JSON.parse(queryString)).populate('courses', 'title description weeks ');
+  query = Bootcamp.find(JSON.parse(queryString)).populate(
+    "courses",
+    "title description weeks "
+  );
 
   // Select fields
   if (req.query.select) {
@@ -60,24 +90,24 @@ exports.getBootcamps = asyncHandler(async (req, res, next) => {
   // Pagination esult
   const pagination = {};
 
-  if(endIndex<total){
+  if (endIndex < total) {
     pagination.next = {
-      page: page+1,
-      limit:limit
-    }
+      page: page + 1,
+      limit: limit,
+    };
   }
-  if(startIndex > 0){
+  if (startIndex > 0) {
     pagination.prev = {
-      page:page-1,
-      limit:limit
-    }
+      page: page - 1,
+      limit: limit,
+    };
   }
 
   res.status(200).json({
     success: true,
     count: bootcamps.length,
     pagination: pagination,
-    data: bootcamps
+    data: bootcamps,
   });
 });
 
@@ -85,7 +115,7 @@ exports.getBootcamps = asyncHandler(async (req, res, next) => {
 //  @route      GET /api/v1/bootcamps/:id
 //  @access     Public
 exports.getBootcamp = asyncHandler(async (req, res, next) => {
-  const bootcamp = await Bootcamp.findById(req.params.id).populate('courses');;
+  const bootcamp = await Bootcamp.findById(req.params.id).populate("courses");
 
   if (!bootcamp) {
     return next(
@@ -141,7 +171,7 @@ exports.deleteBootcamp = asyncHandler(async (req, res, next) => {
     );
   }
 
-  bootcamp.remove();  //trigggers middlewares which listens to "remove"
+  bootcamp.remove(); //trigggers middlewares which listens to "remove"
 
   res.status(200).json({ success: true, data: {} });
 });
@@ -178,6 +208,27 @@ exports.getBootcampInRadius = asyncHandler(async (req, res, next) => {
     count: bootcamps.length,
     data: bootcamps,
   });
+});
+
+//  @desc       Upload photo for bootcamp
+//  @route      PUT /api/v1/bootcamps/:id/photo
+//  @access     Private
+exports.bootcampPhotoUpload = asyncHandler(async (req, res, next) => {
+  const bootcamp = await Bootcamp.findById(req.params.id);
+  const { file } = req;
+  //check if bootcamp exists
+  if (!bootcamp) {
+    return next(
+      new errorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+    );
+  }
+
+  //file size, file type every error is taken care by multer..saved it also.
+
+  //updating the photo field for the perticuler bootacamp
+  await Bootcamp.findByIdAndUpdate(req.params.id, { photo: file.filename });
+
+  res.status(200).json({ success: true, data: file.filename });
 });
 
 //old
